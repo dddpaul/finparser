@@ -41,11 +41,14 @@ func (purchases Purchases) toCsv() [][]string {
 	return csv
 }
 
-var re *regexp.Regexp
+var re1 *regexp.Regexp
+var re2 *regexp.Regexp
 
 func init() {
 	var err error
-	re, err = regexp.Compile("^(\\d+\\+)+(\\d+)$")
+	re1, err = regexp.Compile("^(\\d+\\+)+(\\d+)$")
+	panicIfNotNil(err)
+	re2, err = regexp.Compile("^[^\\d]\\d+=(\\d+)$")
 	panicIfNotNil(err)
 }
 
@@ -64,19 +67,27 @@ func isEmpty(records []string) bool {
 	return true
 }
 
-// Parse strings like "123+456+789" and return sum
+// Parse strings like "123+456+789" or "$5=338" and return sum in roubles
 func parseAndSum(s string) (int, error) {
 	var sum int
-	if !re.MatchString(s) {
-		return 0, fmt.Errorf("Invalid string sum value: %s", s)
-	}
-	strItems := strings.Split(s, "+")
-	for _, strItem := range strItems {
-		item, err := strconv.Atoi(strItem)
+	var err error
+	if re1.MatchString(s) {
+		strItems := strings.Split(s, "+")
+		for _, strItem := range strItems {
+			item, err := strconv.Atoi(strItem)
+			if err != nil {
+				return 0, err
+			}
+			sum += item
+		}
+	} else if re2.MatchString(s) {
+		strItems := strings.Split(s, "=")
+		sum, err = strconv.Atoi(strItems[1])
 		if err != nil {
 			return 0, err
 		}
-		sum += item
+	} else {
+		return 0, fmt.Errorf("Invalid string sum value: %s", s)
 	}
 	return sum, nil
 }

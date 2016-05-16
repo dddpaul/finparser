@@ -73,6 +73,10 @@ func TestSum(t *testing.T) {
 	sum, err = parseAndSum("123+456+1")
 	assert.Nil(t, err)
 	assert.Equal(t, 580, sum)
+
+	sum, err = parseAndSum("$5=338")
+	assert.Nil(t, err)
+	assert.Equal(t, 338, sum)
 }
 
 func TestNewCommodity(t *testing.T) {

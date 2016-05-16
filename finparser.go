@@ -1,15 +1,14 @@
 package main
 
 import (
-	"os"
-	"encoding/csv"
 	"bufio"
+	"encoding/csv"
 	"fmt"
-	"errors"
-	"time"
-	"strings"
+	"os"
 	"regexp"
 	"strconv"
+	"strings"
+	"time"
 )
 
 const df = "02.01.2006"
@@ -47,10 +46,10 @@ var re *regexp.Regexp
 func init() {
 	var err error
 	re, err = regexp.Compile("^(\\d+\\+)+(\\d+)$")
-	check(err)
+	panicIfNotNil(err)
 }
 
-func check(err error) {
+func panicIfNotNil(err error) {
 	if err != nil {
 		panic(err)
 	}
@@ -69,7 +68,7 @@ func isEmpty(records []string) bool {
 func parseAndSum(s string) (int, error) {
 	var sum int
 	if !re.MatchString(s) {
-		return 0, errors.New(fmt.Sprintf("Invalid string sum value: %s", s))
+		return 0, fmt.Errorf("Invalid string sum value: %s", s)
 	}
 	strItems := strings.Split(s, "+")
 	for _, strItem := range strItems {
@@ -85,7 +84,7 @@ func parseAndSum(s string) (int, error) {
 func newCommodity(s string) (*Commodity, error) {
 	tokens := strings.Split(s, "(")
 	if len(tokens) != 2 {
-		return nil, errors.New(fmt.Sprintf("Can't parse: %s", s))
+		return nil, fmt.Errorf("Can't parse: %s", s)
 	}
 	desc := strings.Trim(tokens[0], " ")
 	strPrice := strings.TrimRight(tokens[1], ")")
@@ -140,7 +139,7 @@ func getPurchases(records [][]string) (Purchases, []error) {
 				continue
 			}
 			purchase := &Purchase{
-				date: date,
+				date:      date,
 				commodity: commodity,
 			}
 			purchases = append(purchases, purchase)
@@ -151,21 +150,21 @@ func getPurchases(records [][]string) (Purchases, []error) {
 
 func main() {
 	if len(os.Args) < 3 {
-		panic(errors.New(fmt.Sprintf("Usage: %s <input-file> <output-file>", os.Args[0])))
+		panic(fmt.Errorf("Usage: %s <input-file> <output-file>", os.Args[0]))
 	}
 
 	in, err := os.Open(os.Args[1])
-	check(err)
+	panicIfNotNil(err)
 
 	r := csv.NewReader(bufio.NewReader(in))
 	records, err := r.ReadAll()
-	check(err)
+	panicIfNotNil(err)
 
 	purchases, errors := getPurchases(records)
 	fmt.Printf("Records total: %d, purchases: %d, errors: %d\n", len(records), len(purchases), len(errors))
 
 	out, err := os.Create(os.Args[2])
-	check(err)
+	panicIfNotNil(err)
 
 	w := csv.NewWriter(bufio.NewWriter(out))
 	w.WriteAll(purchases.toCsv())

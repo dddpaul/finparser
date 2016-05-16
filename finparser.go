@@ -134,10 +134,9 @@ func getPurchases(records [][]string) (Purchases, []error) {
 			continue
 		}
 
-		// First field of record is date
+		// First field of record is a date, but if it's not a date - it's ok
 		date, err := time.Parse(df, record[0])
 		if err != nil {
-			errors = append(errors, err)
 			continue
 		}
 

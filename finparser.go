@@ -70,7 +70,6 @@ func isEmpty(records []string) bool {
 // Parse strings like "123+456+789" or "$5=338" and return sum in roubles
 func parseAndSum(s string) (int, error) {
 	var sum int
-	var err error
 	if re1.MatchString(s) {
 		strItems := strings.Split(s, "+")
 		for _, strItem := range strItems {
@@ -82,10 +81,11 @@ func parseAndSum(s string) (int, error) {
 		}
 	} else if re2.MatchString(s) {
 		strItems := strings.Split(s, "=")
-		sum, err = strconv.Atoi(strItems[1])
+		item, err := strconv.Atoi(strItems[1])
 		if err != nil {
 			return 0, err
 		}
+		sum = item
 	} else {
 		return 0, fmt.Errorf("Invalid string sum value: %s", s)
 	}

@@ -122,7 +122,11 @@ func parseSum(s string) (int, error) {
 	return sum, nil
 }
 
-// Parse strings like "Ипотека", "Кошка - витамины" or "Маша|обувь - кроссовки" and return person, category and commodity name
+// Input string formats:
+// - "person/category - name" - it's all clear
+// - "person/category" - name=category
+// - "category - name" - person is empty
+// - "name" - person is empty, category=name
 func parseDesc(s string) (string, string, string, error) {
 	var person, category, name string
 	items := strings.Split(s, " - ")
@@ -130,6 +134,7 @@ func parseDesc(s string) (string, string, string, error) {
 		return "", "", "", fmt.Errorf("Invalid description format: %s", s)
 	}
 
+	// Get ["Mary", "School"] from "Mary/School"
 	subItems := strings.FieldsFunc(items[0], func(r rune) bool {
 		return r == '/' || r == '|'
 	})
@@ -147,7 +152,11 @@ func parseDesc(s string) (string, string, string, error) {
 	if len(items) == 2 {
 		name = items[1]
 	} else {
-		name = subItems[0]
+		if len(subItems) > 1 {
+			name = subItems[1]
+		} else {
+			name = subItems[0]
+		}
 	}
 
 	return person, category, name, nil

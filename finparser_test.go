@@ -118,6 +118,12 @@ func TestDesc(t *testing.T) {
 	assert.Equal(t, "обувь", category)
 	assert.Equal(t, "кроссовки", name)
 
+	person, category, name, err = parseDesc("Маша|обувь")
+	assert.Nil(t, err)
+	assert.Equal(t, "Маша", person)
+	assert.Equal(t, "обувь", category)
+	assert.Equal(t, "обувь", name)
+
 	// invalid input
 	person, category, name, err = parseDesc("пиво -раки")
 	assert.Nil(t, err)

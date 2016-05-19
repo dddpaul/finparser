@@ -80,6 +80,14 @@ func TestSum(t *testing.T) {
 	sum, err = parseSum("$5=338")
 	assert.Nil(t, err)
 	assert.Equal(t, 338, sum)
+
+	sum, err = parseSum("$17=1144")
+	assert.Nil(t, err)
+	assert.Equal(t, 1144, sum)
+
+	sum, err = parseSum("2x500")
+	assert.Nil(t, err)
+	assert.Equal(t, 1000, sum)
 }
 
 func TestDesc(t *testing.T) {

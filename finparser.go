@@ -59,7 +59,7 @@ var re2 *regexp.Regexp
 
 func init() {
 	var err error
-	re1, err = regexp.Compile("^(\\d+\\+)+(\\d+)$")
+	re1, err = regexp.Compile("^(\\d+[\\+x])+(\\d+)$")
 	panicIfNotNil(err)
 	re2, err = regexp.Compile("^[^\\d]\\d+=(\\d+)$")
 	panicIfNotNil(err)
@@ -80,17 +80,34 @@ func isEmpty(records []string) bool {
 	return true
 }
 
-// Parse strings like "123+456+789" or "$5=338" and return sum in roubles
+// Parse strings like "123+456+789", "2x400", "$5=338" and return sum in roubles
 func parseSum(s string) (int, error) {
 	var sum int
 	if re1.MatchString(s) {
 		strItems := strings.Split(s, "+")
-		for _, strItem := range strItems {
-			item, err := strconv.Atoi(strItem)
-			if err != nil {
-				return 0, err
+		if len(strItems) > 1 {
+			for _, strItem := range strItems {
+				item, err := strconv.Atoi(strItem)
+				if err != nil {
+					return 0, err
+				}
+				sum += item
 			}
-			sum += item
+		} else {
+			strItems = strings.Split(s, "x")
+			if len(strItems) > 1 {
+				for i, strItem := range strItems {
+					item, err := strconv.Atoi(strItem)
+					if err != nil {
+						return 0, err
+					}
+					if i == 0 {
+						sum = item
+					} else {
+						sum *= item
+					}
+				}
+			}
 		}
 	} else if re2.MatchString(s) {
 		strItems := strings.Split(s, "=")
@@ -150,10 +167,7 @@ func newCommodity(s string) (*Commodity, error) {
 		return nil, err
 	}
 
-	isSum, err := regexp.MatchString("^(\\d+\\+)+\\d+$", strPrice)
-	if err != nil {
-		return nil, err
-	}
+	isSum := re1.MatchString(strPrice) || re2.MatchString(strPrice)
 
 	var price int
 	if isDigit {

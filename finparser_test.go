@@ -83,37 +83,38 @@ func TestSum(t *testing.T) {
 }
 
 func TestDesc(t *testing.T) {
-	categories, name, err := parseDesc("")
+	person, category, name, err := parseDesc("")
 	assert.NotNil(t, err)
 
-	categories, name, err = parseDesc("Продукты/Глобус")
+	person, category, name, err = parseDesc("Продукты")
 	assert.Nil(t, err)
-	assert.Equal(t, 2, len(categories))
-	assert.Equal(t, "Продукты", categories[0])
-	assert.Equal(t, "Глобус", categories[1])
+	assert.Equal(t, "", person)
+	assert.Equal(t, "Продукты", category)
 	assert.Equal(t, "Продукты", name)
 
-	categories, name, err = parseDesc("Кошка - витамины")
+	person, category, name, err = parseDesc("Продукты - Глобус")
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(categories))
-	assert.Equal(t, "Кошка", categories[0])
+	assert.Equal(t, "", person)
+	assert.Equal(t, "Продукты", category)
+	assert.Equal(t, "Глобус", name)
+
+	person, category, name, err = parseDesc("Кошка - витамины")
+	assert.Nil(t, err)
+	assert.Equal(t, "", person)
+	assert.Equal(t, "Кошка", category)
 	assert.Equal(t, "витамины", name)
 
-	categories, name, err = parseDesc("Маша|обувь - кроссовки")
+	person, category, name, err = parseDesc("Маша|обувь - кроссовки")
 	assert.Nil(t, err)
-	assert.Equal(t, 2, len(categories))
-	assert.Equal(t, "Маша", categories[0])
-	assert.Equal(t, "обувь", categories[1])
+	assert.Equal(t, "Маша", person)
+	assert.Equal(t, "обувь", category)
 	assert.Equal(t, "кроссовки", name)
 
-	categories, name, err = parseDesc("пиво")
+	// invalid input
+	person, category, name, err = parseDesc("пиво -раки")
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(categories))
-	assert.Equal(t, "пиво", name)
-
-	categories, name, err = parseDesc("пиво -раки")
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(categories))
+	assert.Equal(t, "", person)
+	assert.Equal(t, "пиво -раки", category)
 	assert.Equal(t, "пиво -раки", name)
 }
 
@@ -121,25 +122,15 @@ func TestNewCommodity(t *testing.T) {
 	_, err := newCommodity("")
 	assert.NotNil(t, err)
 
-	purchase, err := newCommodity("Cat's food (123)")
+	c, err := newCommodity("Cat's food (123)")
 	assert.Nil(t, err)
-	assert.Equal(t, "Cat's food", purchase.name)
-	assert.Equal(t, 1, len(purchase.categories))
-	assert.Equal(t, "Cat's food", purchase.categories[0])
-	assert.Equal(t, 123, purchase.price)
+	assert.Equal(t, 123, c.price)
 
-	purchase, err = newCommodity("Food - cat's food and chocolate(123+456)")
+	c, err = newCommodity("Food - cat's food and chocolate(123+456)")
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(purchase.categories))
-	assert.Equal(t, "Food", purchase.categories[0])
-	assert.Equal(t, "cat's food and chocolate", purchase.name)
-	assert.Equal(t, 579, purchase.price)
+	assert.Equal(t, 579, c.price)
 
-	purchase, err = newCommodity("Food/alcohol - chocolate with nuts and some beer (123+456+200)")
+	c, err = newCommodity("Mary/food - chocolate with nuts and some juice (123+456+200)")
 	assert.Nil(t, err)
-	assert.Equal(t, 2, len(purchase.categories))
-	assert.Equal(t, "Food", purchase.categories[0])
-	assert.Equal(t, "alcohol", purchase.categories[1])
-	assert.Equal(t, "chocolate with nuts and some beer", purchase.name)
-	assert.Equal(t, 779, purchase.price)
+	assert.Equal(t, 779, c.price)
 }

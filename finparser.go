@@ -13,10 +13,20 @@ import (
 
 const df = "02.01.2006"
 
+type ParseError struct {
+	s   string
+	row int
+}
+
+func (e ParseError) Error() string {
+	return fmt.Sprintf("%s, row: %d", e.s, e.row)
+}
+
 type Commodity struct {
-	categories Categories
-	name       string
-	price      int
+	person   string
+	category string
+	name     string
+	price    int
 }
 
 type Purchase struct {
@@ -27,7 +37,8 @@ type Purchase struct {
 func (p Purchase) toArray() []string {
 	return []string{
 		p.date.Format(df),
-		strings.Join(p.commodity.categories, "|"),
+		p.commodity.person,
+		p.commodity.category,
 		p.commodity.name,
 		strconv.Itoa(p.commodity.price),
 	}
@@ -42,8 +53,6 @@ func (pp Purchases) toCsv() [][]string {
 	}
 	return csv
 }
-
-type Categories []string
 
 var re1 *regexp.Regexp
 var re2 *regexp.Regexp
@@ -96,26 +105,35 @@ func parseSum(s string) (int, error) {
 	return sum, nil
 }
 
-// Parse strings like "Продукты/Глобус" or "Кошка - витамины" or "Маша|обувь - кроссовки" or "пиво"
-// and return list of categories and commodity name
-func parseDesc(s string) (Categories, string, error) {
+// Parse strings like "Ипотека", "Кошка - витамины" or "Маша|обувь - кроссовки" and return person, category and commodity name
+func parseDesc(s string) (string, string, string, error) {
+	var person, category, name string
 	items := strings.Split(s, " - ")
 	if len(items) < 1 && len(items) > 2 {
-		return nil, "", fmt.Errorf("Invalid description format: %s", s)
+		return "", "", "", fmt.Errorf("Invalid description format: %s", s)
 	}
-	categories := strings.FieldsFunc(items[0], func(r rune) bool {
+
+	subItems := strings.FieldsFunc(items[0], func(r rune) bool {
 		return r == '/' || r == '|'
 	})
-	if len(categories) == 0 {
-		return nil, "", fmt.Errorf("Invalid categories format: %s", items[0])
+	if len(subItems) == 0 {
+		return "", "", "", fmt.Errorf("Invalid person/category format: %s", items[0])
 	}
-	var name string
+
+	if len(subItems) >= 2 {
+		person = subItems[0]
+		category = subItems[1]
+	} else {
+		category = subItems[0]
+	}
+
 	if len(items) == 2 {
 		name = items[1]
 	} else {
-		name = categories[0]
+		name = subItems[0]
 	}
-	return categories, name, nil
+
+	return person, category, name, nil
 }
 
 func newCommodity(s string) (*Commodity, error) {
@@ -125,7 +143,7 @@ func newCommodity(s string) (*Commodity, error) {
 	}
 	desc := strings.Trim(tokens[0], " ")
 	strPrice := strings.TrimRight(tokens[1], ")")
-	categories, name, err := parseDesc(desc)
+	person, category, name, err := parseDesc(desc)
 
 	isDigit, err := regexp.MatchString("^\\d+$", strPrice)
 	if err != nil {
@@ -147,14 +165,14 @@ func newCommodity(s string) (*Commodity, error) {
 		return nil, err
 	}
 
-	return &Commodity{categories, name, price}, nil
+	return &Commodity{person, category, name, price}, nil
 }
 
-func getPurchases(records [][]string) (Purchases, []error) {
+func getPurchases(records [][]string) (Purchases, []*ParseError) {
 	var purchases []*Purchase
-	var errors []error
-	for i, record := range records {
-		if i == 0 {
+	var errors []*ParseError
+	for row, record := range records {
+		if row == 0 {
 			continue
 		}
 		if isEmpty(record) {
@@ -172,7 +190,7 @@ func getPurchases(records [][]string) (Purchases, []error) {
 		for _, s := range commodities {
 			commodity, err := newCommodity(s)
 			if err != nil {
-				errors = append(errors, err)
+				errors = append(errors, &ParseError{err.Error(), row + 1})
 				continue
 			}
 			purchase := &Purchase{
@@ -199,6 +217,9 @@ func main() {
 
 	purchases, errors := getPurchases(records)
 	fmt.Printf("Records total: %d, purchases: %d, errors: %d\n", len(records), len(purchases), len(errors))
+	if len(errors) > 0 {
+		fmt.Printf("Errors are: %s\n", errors)
+	}
 
 	out, err := os.Create(os.Args[2])
 	panicIfNotNil(err)

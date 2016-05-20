@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"github.com/soniah/evaler"
 )
 
 const df = "02.01.2006"
@@ -59,7 +60,7 @@ var re2 *regexp.Regexp
 
 func init() {
 	var err error
-	re1, err = regexp.Compile("^(\\d+[\\+x])+(\\d+)$")
+	re1, err = regexp.Compile("^\\d+$")
 	panicIfNotNil(err)
 	re2, err = regexp.Compile("^[^\\d]\\d+=(\\d+)$")
 	panicIfNotNil(err)
@@ -80,53 +81,12 @@ func isEmpty(records []string) bool {
 	return true
 }
 
-// Parse strings like "123+456+789", "2x400", "$5=338" and return sum in roubles
-func parseSum(s string) (int, error) {
-	var sum int
-	if re1.MatchString(s) {
-		strItems := strings.Split(s, "+")
-		if len(strItems) > 1 {
-			for _, strItem := range strItems {
-				item, err := strconv.Atoi(strItem)
-				if err != nil {
-					return 0, err
-				}
-				sum += item
-			}
-		} else {
-			strItems = strings.Split(s, "x")
-			if len(strItems) > 1 {
-				for i, strItem := range strItems {
-					item, err := strconv.Atoi(strItem)
-					if err != nil {
-						return 0, err
-					}
-					if i == 0 {
-						sum = item
-					} else {
-						sum *= item
-					}
-				}
-			}
-		}
-	} else if re2.MatchString(s) {
-		strItems := strings.Split(s, "=")
-		item, err := strconv.Atoi(strItems[1])
-		if err != nil {
-			return 0, err
-		}
-		sum = item
-	} else {
-		return 0, fmt.Errorf("Invalid string sum value: %s", s)
-	}
-	return sum, nil
-}
-
 // Input string formats:
-// - "person/category - name" - it's all clear
-// - "person/category" - name=category
-// - "category - name" - person is empty
-// - "name" - person is empty, category=name
+// - "person/category - name" - it's all clear;
+// - "person/category" - name=category;
+// - "category - name" - person is empty;
+// - "name" - person is empty, category=name.
+// Returns person, category, name, error.
 func parseDesc(s string) (string, string, string, error) {
 	var person, category, name string
 	items := strings.Split(s, " - ")
@@ -162,6 +122,29 @@ func parseDesc(s string) (string, string, string, error) {
 	return person, category, name, nil
 }
 
+// Parse strings like "123+456+789", "2*400", "$5=338" and return sum in roubles
+func parseSum(s string) (int, error) {
+	var sum int
+	var err error
+	if re1.MatchString(s) {
+		if sum, err = strconv.Atoi(s); err != nil {
+			return 0, err
+		}
+	} else if re2.MatchString(s) {
+		strItems := strings.Split(s, "=")
+		if sum, err = strconv.Atoi(strItems[1]); err != nil {
+			return 0, err
+		}
+	} else {
+		rat, err := evaler.Eval(s)
+		if err != nil {
+			return 0, err
+		}
+		sum = int(rat.Num().Int64())
+	}
+	return sum, nil
+}
+
 func newCommodity(s string) (*Commodity, error) {
 	tokens := strings.Split(s, "(")
 	if len(tokens) != 2 {
@@ -170,24 +153,13 @@ func newCommodity(s string) (*Commodity, error) {
 	desc := strings.Trim(tokens[0], " ")
 	strPrice := strings.TrimRight(tokens[1], ")")
 	person, category, name, err := parseDesc(desc)
-
-	isDigit, err := regexp.MatchString("^\\d+$", strPrice)
 	if err != nil {
 		return nil, err
 	}
-
-	isSum := re1.MatchString(strPrice) || re2.MatchString(strPrice)
-
-	var price int
-	if isDigit {
-		price, err = strconv.Atoi(strPrice)
-	} else if isSum {
-		price, err = parseSum(strPrice)
-	}
+	price, err := parseSum(strPrice)
 	if err != nil {
 		return nil, err
 	}
-
 	return &Commodity{person, category, name, price}, nil
 }
 

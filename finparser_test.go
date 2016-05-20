@@ -61,7 +61,8 @@ func TestSum(t *testing.T) {
 	assert.NotNil(t, err)
 
 	sum, err = parseSum("123")
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
+	assert.Equal(t, 123, sum)
 
 	sum, err = parseSum("123+")
 	assert.NotNil(t, err)
@@ -85,9 +86,13 @@ func TestSum(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 1144, sum)
 
-	sum, err = parseSum("2x500")
+	sum, err = parseSum("2*500")
 	assert.Nil(t, err)
 	assert.Equal(t, 1000, sum)
+
+	sum, err = parseSum("100+2000/5*3")
+	assert.Nil(t, err)
+	assert.Equal(t, 1300, sum)
 }
 
 func TestDesc(t *testing.T) {

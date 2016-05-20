@@ -20,10 +20,10 @@ LOAD
     @1 as Дата,
     Year(@1) as Год,
     Month(@1) as Месяц,
-    Year(@1) & '-' & Month(@1) as 'Год и месяц',
+    Dual(Year(@1) & '-' & Month(@1), MonthStart(@1)) as 'Год и месяц',
     if(Len(@2) > 0, Lower(@2), 'Общие') as 'Член семьи',
     Lower(@3) as Категория,
     Lower(@4) as Покупка,
     @5 as Цена
-FROM [lib://qlikid_dddpaul1980/purchases-20160519.csv]
+FROM [lib://qlikid_dddpaul1980/purchases-20160520.csv]
 (txt, utf8, no labels, delimiter is ',', msq);

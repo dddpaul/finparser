@@ -1,0 +1,3 @@
+package: github.com/dddpaul/finparser
+import:
+- package: github.com/soniah/evaler

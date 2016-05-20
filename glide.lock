@@ -1,0 +1,6 @@
+hash: c96ea7baf820e749b84fd7e34d66e2d67ae36ea79c1ab8e419472c5e799d9eb0
+updated: 2016-05-20T20:55:16.345344678+03:00
+imports:
+- name: github.com/soniah/evaler
+  version: 5fddf0c45aa167a5a343d4fc28e889c058e29da7
+devImports: []

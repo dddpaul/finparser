@@ -22,8 +22,8 @@ LOAD
     Month(@1) as Месяц,
     Dual(Year(@1) & '-' & Month(@1), MonthStart(@1)) as 'Год и месяц',
     if(Len(@2) > 0, Lower(@2), 'Общие') as 'Член семьи',
-    Lower(@3) as Категория,
+    if(Wildmatch(@4, 'автобус', 'трамвай', 'троллейбус', 'маршрутка', 'метро', 'электричка', 'такси') > 0, 'транспорт', Lower(@3)) as Категория,
     Lower(@4) as Покупка,
     @5 as Цена
-FROM [lib://qlikid_dddpaul1980/purchases-20160520.csv]
+FROM [lib://qlikid_dddpaul1980/purchases-20160521.csv]
 (txt, utf8, no labels, delimiter is ',', msq);

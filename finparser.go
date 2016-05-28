@@ -55,6 +55,16 @@ func (pp Purchases) toCsv() [][]string {
 	return csv
 }
 
+type PurchasesByYear map[int]Purchases
+
+func (ppp PurchasesByYear) amount() int {
+	var res int
+	for _, pp := range ppp {
+		res += len(pp)
+	}
+	return res
+}
+
 var re1 *regexp.Regexp
 var re2 *regexp.Regexp
 
@@ -163,8 +173,8 @@ func newCommodity(s string) (*Commodity, error) {
 	return &Commodity{person, category, name, price}, nil
 }
 
-func getPurchases(records [][]string) (Purchases, []*ParseError) {
-	var purchases []*Purchase
+func getPurchases(records [][]string) (PurchasesByYear, []*ParseError) {
+	ppp := make(PurchasesByYear)
 	var errors []*ParseError
 	for row, record := range records {
 		if row == 0 {
@@ -192,15 +202,15 @@ func getPurchases(records [][]string) (Purchases, []*ParseError) {
 				date:      date,
 				commodity: commodity,
 			}
-			purchases = append(purchases, purchase)
+			ppp[date.Year()] = append(ppp[date.Year()], purchase)
 		}
 	}
-	return purchases, errors
+	return ppp, errors
 }
 
 func main() {
 	if len(os.Args) < 3 {
-		panic(fmt.Errorf("Usage: %s <input-file> <output-file>", os.Args[0]))
+		panic(fmt.Errorf("Usage: %s <input-file> <output-file-template>", os.Args[0]))
 	}
 
 	in, err := os.Open(os.Args[1])
@@ -210,15 +220,20 @@ func main() {
 	records, err := r.ReadAll()
 	panicIfNotNil(err)
 
-	purchases, errors := getPurchases(records)
-	fmt.Printf("Records total: %d, purchases: %d, errors: %d\n", len(records), len(purchases), len(errors))
+	ppp, errors := getPurchases(records)
+	fmt.Printf("Records total: %d, years: %d, purchases: %d, errors: %d\n", len(records), len(ppp), ppp.amount(), len(errors))
 	if len(errors) > 0 {
 		fmt.Printf("Errors are: %s\n", errors)
 	}
 
-	out, err := os.Create(os.Args[2])
-	panicIfNotNil(err)
+	// Write purchases to separate files by year
+	for year, pp := range ppp {
+		fn := os.Args[2] + "-" + strconv.Itoa(year) + ".csv"
+		out, err := os.Create(fn)
+		panicIfNotNil(err)
 
-	w := csv.NewWriter(bufio.NewWriter(out))
-	w.WriteAll(purchases.toCsv())
+		w := csv.NewWriter(bufio.NewWriter(out))
+		w.WriteAll(pp.toCsv())
+		out.Close()
+	}
 }

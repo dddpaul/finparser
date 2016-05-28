@@ -221,4 +221,5 @@ func main() {
 
 	w := csv.NewWriter(bufio.NewWriter(out))
 	w.WriteAll(purchases.toCsv())
+	out.Close()
 }

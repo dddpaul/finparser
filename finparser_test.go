@@ -2,10 +2,10 @@ package main
 
 import (
 	"github.com/stretchr/testify/assert"
+	"regexp"
+	"strings"
 	"testing"
 	"time"
-	"strings"
-	"regexp"
 )
 
 func TestIsEmpty(t *testing.T) {

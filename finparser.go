@@ -4,12 +4,12 @@ import (
 	"bufio"
 	"encoding/csv"
 	"fmt"
+	"github.com/soniah/evaler"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
-	"github.com/soniah/evaler"
 )
 
 const df = "02.01.2006"

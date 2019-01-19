@@ -223,6 +223,6 @@ func main() {
 	panicIfNotNil(err)
 
 	w := csv.NewWriter(bufio.NewWriter(out))
-	w.WriteAll(purchases.toCsv())
-	out.Close()
+	panicIfNotNil(w.WriteAll(purchases.toCsv()))
+	panicIfNotNil(out.Close())
 }

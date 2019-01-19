@@ -4,15 +4,18 @@ import (
 	"bufio"
 	"encoding/csv"
 	"fmt"
-	"github.com/soniah/evaler"
+	"math"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/soniah/evaler"
+	"gopkg.in/kolomiichenko/cbr-currency-go.v1"
 )
 
-const df = "02.01.2006"
+const DF = "02.01.2006"
 
 type ParseError struct {
 	s   string
@@ -37,7 +40,7 @@ type Purchase struct {
 
 func (p Purchase) toArray() []string {
 	return []string{
-		p.date.Format(df),
+		p.date.Format(DF),
 		p.commodity.person,
 		p.commodity.category,
 		p.commodity.name,
@@ -55,15 +58,19 @@ func (pp Purchases) toCsv() [][]string {
 	return csv
 }
 
-var re1 *regexp.Regexp
-var re2 *regexp.Regexp
+var re1, re2, re3 *regexp.Regexp
+
+var currencySymbols = map[string]string{"$": "USD", "€": "EUR"}
 
 func init() {
 	var err error
 	re1, err = regexp.Compile("^\\d+$")
 	panicIfNotNil(err)
-	re2, err = regexp.Compile("^[^\\d]\\d+=(\\d+)$")
+	re2, err = regexp.Compile("^[$€]\\d+(\\.\\d+)*=(\\d+)$")
 	panicIfNotNil(err)
+	re3, err = regexp.Compile("^([$€])(\\d+)$")
+	panicIfNotNil(err)
+	cbr.UpdateCurrencyRates()
 }
 
 func panicIfNotNil(err error) {
@@ -122,8 +129,8 @@ func parseDesc(s string) (string, string, string, error) {
 	return person, category, name, nil
 }
 
-// Parse strings like "123+456+789", "2*400", "$5=338" and return sum in roubles
-func parseSum(s string) (int, error) {
+// Parse strings like "123+456+789", "2*400", "$5=338" or "€17" and return sum in roubles
+func parsePriceExpr(s string, date time.Time) (int, error) {
 	var sum int
 	var err error
 	if re1.MatchString(s) {
@@ -135,6 +142,15 @@ func parseSum(s string) (int, error) {
 		if sum, err = strconv.Atoi(strItems[1]); err != nil {
 			return 0, err
 		}
+	} else if re3.MatchString(s) {
+		if tokens := re3.FindStringSubmatch(s); tokens != nil {
+			if sum, err = strconv.Atoi(tokens[2]); err != nil {
+				return 0, err
+			}
+			code := currencySymbols[tokens[1]]
+			sum = int(math.Round(float64(sum) * getCurrencyRate(code, date)))
+			return sum, nil
+		}
 	} else {
 		rat, err := evaler.Eval(s)
 		if err != nil {
@@ -145,7 +161,15 @@ func parseSum(s string) (int, error) {
 	return sum, nil
 }
 
-func newCommodity(s string) (*Commodity, error) {
+func getCurrencyRate(code string, d time.Time) float64 {
+	if d.IsZero() {
+		return cbr.GetCurrencyRates()[code].Value
+	} else {
+		return cbr.FetchCurrencyRates(d)[code].Value
+	}
+}
+
+func newCommodity(s string, date time.Time) (*Commodity, error) {
 	tokens := strings.Split(s, "(")
 	if len(tokens) != 2 {
 		return nil, fmt.Errorf("Can't parse: %s", s)
@@ -156,7 +180,7 @@ func newCommodity(s string) (*Commodity, error) {
 	if err != nil {
 		return nil, err
 	}
-	price, err := parseSum(strPrice)
+	price, err := parsePriceExpr(strPrice, date)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +199,7 @@ func getPurchases(records [][]string) (Purchases, []*ParseError) {
 		}
 
 		// First field of record is a date, but if it's not a date - it's ok
-		date, err := time.Parse(df, record[0])
+		date, err := time.Parse(DF, record[0])
 		if err != nil {
 			continue
 		}
@@ -183,7 +207,7 @@ func getPurchases(records [][]string) (Purchases, []*ParseError) {
 		// Second field of record is commodity list in text format
 		commodities := strings.Split(record[1], ",")
 		for _, s := range commodities {
-			commodity, err := newCommodity(s)
+			commodity, err := newCommodity(s, date)
 			if err != nil {
 				errors = append(errors, &ParseError{err.Error(), row + 1})
 				continue
@@ -220,6 +244,6 @@ func main() {
 	panicIfNotNil(err)
 
 	w := csv.NewWriter(bufio.NewWriter(out))
-	w.WriteAll(purchases.toCsv())
-	out.Close()
+	panicIfNotNil(w.WriteAll(purchases.toCsv()))
+	panicIfNotNil(out.Close())
 }

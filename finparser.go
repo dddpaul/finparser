@@ -98,7 +98,7 @@ func parseDesc(s string) (string, string, string, error) {
 	var person, category, name string
 	items := strings.Split(s, " - ")
 	if len(items) < 1 && len(items) > 2 {
-		return "", "", "", fmt.Errorf("Invalid description format: %s", s)
+		return "", "", "", fmt.Errorf("invalid description format: %s", s)
 	}
 
 	// Get ["Mary", "School"] from "Mary/School"
@@ -106,23 +106,23 @@ func parseDesc(s string) (string, string, string, error) {
 		return r == '/' || r == '|'
 	})
 	if len(subItems) == 0 {
-		return "", "", "", fmt.Errorf("Invalid person/category format: %s", items[0])
+		return "", "", "", fmt.Errorf("invalid person/category format: %s", items[0])
 	}
 
 	if len(subItems) >= 2 {
-		person = subItems[0]
-		category = subItems[1]
+		person = strings.TrimSpace(subItems[0])
+		category = strings.TrimSpace(subItems[1])
 	} else {
-		category = subItems[0]
+		category = strings.TrimSpace(subItems[0])
 	}
 
 	if len(items) == 2 {
-		name = items[1]
+		name = strings.TrimSpace(items[1])
 	} else {
 		if len(subItems) > 1 {
-			name = subItems[1]
+			name = strings.TrimSpace(subItems[1])
 		} else {
-			name = subItems[0]
+			name = strings.TrimSpace(subItems[0])
 		}
 	}
 
@@ -171,11 +171,11 @@ func getCurrencyRate(code string, d time.Time) float64 {
 
 func newCommodity(s string, date time.Time) (*Commodity, error) {
 	tokens := strings.Split(s, "(")
-	if len(tokens) != 2 {
-		return nil, fmt.Errorf("Can't parse: %s", s)
+	if len(tokens) < 2 {
+		return nil, fmt.Errorf("can't parse: %s", s)
 	}
-	desc := strings.Trim(tokens[0], " ")
-	strPrice := strings.TrimRight(tokens[1], ")")
+	desc := strings.TrimSpace(tokens[0])
+	strPrice := strings.TrimRight(strings.TrimSpace(tokens[1]), ")")
 	person, category, name, err := parseDesc(desc)
 	if err != nil {
 		return nil, err

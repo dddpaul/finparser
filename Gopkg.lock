@@ -80,6 +80,7 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "a15fa5762686c8c73bb459f4763c26bf3f9fd1cf"
+  source = "github.com/dddpaul/cbr-currency-go"
   version = "v1.0.2"
 
 [solve-meta]

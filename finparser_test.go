@@ -82,6 +82,10 @@ func TestExpr(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 338, sum)
 
+	sum, err = parsePriceExpr("$5.5=350", time.Time{})
+	assert.Nil(t, err)
+	assert.Equal(t, 350, sum)
+
 	sum, err = parsePriceExpr("$17=1144", time.Time{})
 	assert.Nil(t, err)
 	assert.Equal(t, 1144, sum)

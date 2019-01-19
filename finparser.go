@@ -66,7 +66,7 @@ func init() {
 	var err error
 	re1, err = regexp.Compile("^\\d+$")
 	panicIfNotNil(err)
-	re2, err = regexp.Compile("^[^\\d]\\d+=(\\d+)$")
+	re2, err = regexp.Compile("^[$€]\\d+(\\.\\d+)*=(\\d+)$")
 	panicIfNotNil(err)
 	re3, err = regexp.Compile("^([$€])(\\d+)$")
 	panicIfNotNil(err)

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/csv"
 	"fmt"
+	"math"
 	"os"
 	"regexp"
 	"strconv"
@@ -11,7 +12,7 @@ import (
 	"time"
 
 	"github.com/soniah/evaler"
-	cbr "gopkg.in/kolomiichenko/cbr-currency-go.v1"
+	"gopkg.in/kolomiichenko/cbr-currency-go.v1"
 )
 
 const df = "02.01.2006"
@@ -57,14 +58,17 @@ func (pp Purchases) toCsv() [][]string {
 	return csv
 }
 
-var re1 *regexp.Regexp
-var re2 *regexp.Regexp
+var re1, re2, re3 *regexp.Regexp
+
+var currencySymbols = map[string]string{"$": "USD", "€": "EUR"}
 
 func init() {
 	var err error
 	re1, err = regexp.Compile("^\\d+$")
 	panicIfNotNil(err)
 	re2, err = regexp.Compile("^[^\\d]\\d+=(\\d+)$")
+	panicIfNotNil(err)
+	re3, err = regexp.Compile("^([$€])(\\d+)$")
 	panicIfNotNil(err)
 	cbr.UpdateCurrencyRates()
 }
@@ -126,7 +130,7 @@ func parseDesc(s string) (string, string, string, error) {
 }
 
 // Parse strings like "123+456+789", "2*400", "$5=338" and return sum in roubles
-func parseSum(s string) (int, error) {
+func parseExpr(s string) (int, error) {
 	var sum int
 	var err error
 	if re1.MatchString(s) {
@@ -148,6 +152,21 @@ func parseSum(s string) (int, error) {
 	return sum, nil
 }
 
+// Parse strings like "$5" or "€17", convert it to roubles with CBR API
+func parseCurrency(s string, d time.Time) (int, error) {
+	var sum int
+	var err error
+	if tokens := re3.FindStringSubmatch(s); tokens != nil {
+		if sum, err = strconv.Atoi(tokens[2]); err != nil {
+			return 0, err
+		}
+		code := currencySymbols[tokens[1]]
+		sum = int(math.Round(float64(sum) * cbr.GetCurrencyRates()[code].Value))
+		return sum, nil
+	}
+	return 0, nil
+}
+
 func newCommodity(s string) (*Commodity, error) {
 	tokens := strings.Split(s, "(")
 	if len(tokens) != 2 {
@@ -159,7 +178,7 @@ func newCommodity(s string) (*Commodity, error) {
 	if err != nil {
 		return nil, err
 	}
-	price, err := parseSum(strPrice)
+	price, err := parseExpr(strPrice)
 	if err != nil {
 		return nil, err
 	}

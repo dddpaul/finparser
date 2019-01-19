@@ -56,43 +56,53 @@ func TestMatch(t *testing.T) {
 	assert.False(t, matched)
 }
 
-func TestSum(t *testing.T) {
-	sum, err := parseSum("")
+func TestExpr(t *testing.T) {
+	sum, err := parseExpr("")
 	assert.NotNil(t, err)
 
-	sum, err = parseSum("123")
+	sum, err = parseExpr("123")
 	assert.Nil(t, err)
 	assert.Equal(t, 123, sum)
 
-	sum, err = parseSum("123+")
+	sum, err = parseExpr("123+")
 	assert.NotNil(t, err)
 
-	sum, err = parseSum("123+456")
+	sum, err = parseExpr("123+456")
 	assert.Nil(t, err)
 	assert.Equal(t, 579, sum)
 
-	sum, err = parseSum("123+456+")
+	sum, err = parseExpr("123+456+")
 	assert.NotNil(t, err)
 
-	sum, err = parseSum("123+456+1")
+	sum, err = parseExpr("123+456+1")
 	assert.Nil(t, err)
 	assert.Equal(t, 580, sum)
 
-	sum, err = parseSum("$5=338")
+	sum, err = parseExpr("$5=338")
 	assert.Nil(t, err)
 	assert.Equal(t, 338, sum)
 
-	sum, err = parseSum("$17=1144")
+	sum, err = parseExpr("$17=1144")
 	assert.Nil(t, err)
 	assert.Equal(t, 1144, sum)
 
-	sum, err = parseSum("2*500")
+	sum, err = parseExpr("2*500")
 	assert.Nil(t, err)
 	assert.Equal(t, 1000, sum)
 
-	sum, err = parseSum("100+2000/5*3")
+	sum, err = parseExpr("100+2000/5*3")
 	assert.Nil(t, err)
 	assert.Equal(t, 1300, sum)
+}
+
+func TestCurrency(t *testing.T) {
+	sum, err := parseCurrency("$1", time.Now())
+	assert.Nil(t, err)
+	assert.Equal(t, 66, sum)
+
+	sum, err = parseCurrency("€1", time.Now())
+	assert.Nil(t, err)
+	assert.Equal(t, 76, sum)
 }
 
 func TestDesc(t *testing.T) {

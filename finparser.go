@@ -198,10 +198,10 @@ func getPurchases(records [][]string) (Purchases, []*ParseError) {
 			continue
 		}
 
-		// First field of record is a date
+		// First field of record is a date, but if it's not a date - it's ok
 		date, err := time.Parse(DF, record[0])
 		if err != nil {
-			errors = append(errors, &ParseError{err.Error(), row + 1})
+			continue
 		}
 
 		// Second field of record is commodity list in text format

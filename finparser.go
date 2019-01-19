@@ -4,12 +4,14 @@ import (
 	"bufio"
 	"encoding/csv"
 	"fmt"
-	"github.com/soniah/evaler"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/soniah/evaler"
+	cbr "gopkg.in/kolomiichenko/cbr-currency-go.v1"
 )
 
 const df = "02.01.2006"
@@ -64,6 +66,7 @@ func init() {
 	panicIfNotNil(err)
 	re2, err = regexp.Compile("^[^\\d]\\d+=(\\d+)$")
 	panicIfNotNil(err)
+	cbr.UpdateCurrencyRates()
 }
 
 func panicIfNotNil(err error) {

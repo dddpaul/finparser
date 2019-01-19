@@ -57,52 +57,51 @@ func TestMatch(t *testing.T) {
 }
 
 func TestExpr(t *testing.T) {
-	sum, err := parseExpr("")
+	sum, err := parsePriceExpr("", time.Time{})
 	assert.NotNil(t, err)
 
-	sum, err = parseExpr("123")
+	sum, err = parsePriceExpr("123", time.Time{})
 	assert.Nil(t, err)
 	assert.Equal(t, 123, sum)
 
-	sum, err = parseExpr("123+")
+	sum, err = parsePriceExpr("123+", time.Time{})
 	assert.NotNil(t, err)
 
-	sum, err = parseExpr("123+456")
+	sum, err = parsePriceExpr("123+456", time.Time{})
 	assert.Nil(t, err)
 	assert.Equal(t, 579, sum)
 
-	sum, err = parseExpr("123+456+")
+	sum, err = parsePriceExpr("123+456+", time.Time{})
 	assert.NotNil(t, err)
 
-	sum, err = parseExpr("123+456+1")
+	sum, err = parsePriceExpr("123+456+1", time.Time{})
 	assert.Nil(t, err)
 	assert.Equal(t, 580, sum)
 
-	sum, err = parseExpr("$5=338")
+	sum, err = parsePriceExpr("$5=338", time.Time{})
 	assert.Nil(t, err)
 	assert.Equal(t, 338, sum)
 
-	sum, err = parseExpr("$17=1144")
+	sum, err = parsePriceExpr("$17=1144", time.Time{})
 	assert.Nil(t, err)
 	assert.Equal(t, 1144, sum)
 
-	sum, err = parseExpr("2*500")
+	sum, err = parsePriceExpr("2*500", time.Time{})
 	assert.Nil(t, err)
 	assert.Equal(t, 1000, sum)
 
-	sum, err = parseExpr("100+2000/5*3")
+	sum, err = parsePriceExpr("100+2000/5*3", time.Time{})
 	assert.Nil(t, err)
 	assert.Equal(t, 1300, sum)
-}
 
-func TestCurrency(t *testing.T) {
-	sum, err := parseCurrency("$1", time.Now())
+	date, _ := time.Parse(DF, "01.12.2012")
+	sum, err = parsePriceExpr("$1", date)
 	assert.Nil(t, err)
-	assert.Equal(t, 66, sum)
+	assert.Equal(t, 31, sum)
 
-	sum, err = parseCurrency("€1", time.Now())
+	sum, err = parsePriceExpr("€2", date)
 	assert.Nil(t, err)
-	assert.Equal(t, 76, sum)
+	assert.Equal(t, 80, sum)
 }
 
 func TestDesc(t *testing.T) {
@@ -148,18 +147,19 @@ func TestDesc(t *testing.T) {
 }
 
 func TestNewCommodity(t *testing.T) {
-	_, err := newCommodity("")
+	_, err := newCommodity("", time.Time{})
 	assert.NotNil(t, err)
 
-	c, err := newCommodity("Cat's food (123)")
+	c, err := newCommodity("Cat's food (123)", time.Time{})
 	assert.Nil(t, err)
 	assert.Equal(t, 123, c.price)
 
-	c, err = newCommodity("Food - cat's food and chocolate(123+456)")
+	c, err = newCommodity("Food - cat's food and chocolate(123+456)", time.Time{})
 	assert.Nil(t, err)
 	assert.Equal(t, 579, c.price)
 
-	c, err = newCommodity("Mary/food - chocolate with nuts and some juice (123+456+200)")
+	date, _ := time.Parse(DF, "01.12.2012")
+	c, err = newCommodity("Mary/food - chocolate with nuts and some juice ($10)", date)
 	assert.Nil(t, err)
-	assert.Equal(t, 779, c.price)
+	assert.Equal(t, 308, c.price)
 }

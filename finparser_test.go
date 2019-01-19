@@ -169,7 +169,9 @@ func TestNewCommodity(t *testing.T) {
 	assert.Equal(t, 579, c.price)
 
 	date, _ := time.Parse(DF, "01.12.2012")
-	c, err = newCommodity("Mary/food - chocolate with nuts and some juice ($10)", date)
+	c, err = newCommodity("  Mary  /  food   -   chocolate with nuts and some juice ($10)  ", date)
 	assert.Nil(t, err)
+	assert.Equal(t, "Mary", c.person)
+	assert.Equal(t, "food", c.category)
 	assert.Equal(t, 308, c.price)
 }

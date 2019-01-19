@@ -171,11 +171,11 @@ func getCurrencyRate(code string, d time.Time) float64 {
 
 func newCommodity(s string, date time.Time) (*Commodity, error) {
 	tokens := strings.Split(s, "(")
-	if len(tokens) != 2 {
+	if len(tokens) < 2 {
 		return nil, fmt.Errorf("can't parse: %s", s)
 	}
-	desc := strings.Trim(tokens[0], " ")
-	strPrice := strings.TrimRight(tokens[1], ")")
+	desc := strings.TrimSpace(tokens[0])
+	strPrice := strings.TrimRight(strings.TrimSpace(tokens[1]), ")")
 	person, category, name, err := parseDesc(desc)
 	if err != nil {
 		return nil, err

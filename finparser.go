@@ -225,14 +225,7 @@ func main() {
 	flag.StringVar(&df, "df", "02.01.2006", "Golang date format")
 	flag.Parse()
 
-	if len(os.Args) < 3 {
-		panic(fmt.Errorf("Usage: %s <input-file> <output-file>", os.Args[0]))
-	}
-
-	in, err := os.Open(os.Args[1])
-	panicIfNotNil(err)
-
-	r := csv.NewReader(bufio.NewReader(in))
+	r := csv.NewReader(bufio.NewReader(os.Stdin))
 	records, err := r.ReadAll()
 	panicIfNotNil(err)
 
@@ -242,10 +235,7 @@ func main() {
 		fmt.Printf("Errors are: %s\n", errors)
 	}
 
-	out, err := os.Create(os.Args[2])
-	panicIfNotNil(err)
-
-	w := csv.NewWriter(bufio.NewWriter(out))
+	w := csv.NewWriter(bufio.NewWriter(os.Stdout))
 	panicIfNotNil(w.WriteAll(purchases.toCsv()))
-	panicIfNotNil(out.Close())
+	panicIfNotNil(os.Stdout.Close())
 }

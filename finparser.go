@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
+	"log"
 	"math"
 	"os"
 	"regexp"
@@ -57,6 +58,7 @@ func (pp Purchases) toCsv() [][]string {
 	return csv
 }
 
+var l *log.Logger
 var df string
 var re1, re2, re3 *regexp.Regexp
 var currencySymbols = map[string]string{"$": "USD", "€": "EUR"}
@@ -225,14 +227,16 @@ func main() {
 	flag.StringVar(&df, "df", "02.01.2006", "Golang date format")
 	flag.Parse()
 
+	l = log.New(os.Stderr, "", log.LstdFlags)
+
 	r := csv.NewReader(bufio.NewReader(os.Stdin))
 	records, err := r.ReadAll()
 	panicIfNotNil(err)
 
 	purchases, errors := getPurchases(records)
-	fmt.Printf("Records total: %d, purchases: %d, errors: %d\n", len(records), len(purchases), len(errors))
+	l.Printf("Records total: %d, purchases: %d, errors: %d\n", len(records), len(purchases), len(errors))
 	if len(errors) > 0 {
-		fmt.Printf("Errors are: %s\n", errors)
+		l.Printf("Errors are: %s\n", errors)
 	}
 
 	w := csv.NewWriter(bufio.NewWriter(os.Stdout))

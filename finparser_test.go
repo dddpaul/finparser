@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+const DF = "02.01.2006"
+
 func TestIsEmpty(t *testing.T) {
 	assert.True(t, isEmpty([]string{"", ""}))
 	assert.True(t, isEmpty([]string{"", "", ""}))

@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/csv"
+	"flag"
 	"fmt"
 	"math"
 	"os"
@@ -14,8 +15,6 @@ import (
 	"github.com/soniah/evaler"
 	"gopkg.in/kolomiichenko/cbr-currency-go.v1"
 )
-
-const DF = "02.01.2006"
 
 type ParseError struct {
 	s   string
@@ -40,7 +39,7 @@ type Purchase struct {
 
 func (p Purchase) toArray() []string {
 	return []string{
-		p.date.Format(DF),
+		p.date.Format(df),
 		p.commodity.person,
 		p.commodity.category,
 		p.commodity.name,
@@ -58,8 +57,8 @@ func (pp Purchases) toCsv() [][]string {
 	return csv
 }
 
+var df string
 var re1, re2, re3 *regexp.Regexp
-
 var currencySymbols = map[string]string{"$": "USD", "€": "EUR"}
 
 func init() {
@@ -199,7 +198,7 @@ func getPurchases(records [][]string) (Purchases, []*ParseError) {
 		}
 
 		// First field of record is a date, but if it's not a date - it's ok
-		date, err := time.Parse(DF, record[0])
+		date, err := time.Parse(df, record[0])
 		if err != nil {
 			continue
 		}
@@ -223,6 +222,9 @@ func getPurchases(records [][]string) (Purchases, []*ParseError) {
 }
 
 func main() {
+	flag.StringVar(&df, "df", "02.01.2006", "Golang date format")
+	flag.Parse()
+
 	if len(os.Args) < 3 {
 		panic(fmt.Errorf("Usage: %s <input-file> <output-file>", os.Args[0]))
 	}

@@ -19,6 +19,17 @@ import (
 
 const DEFAULT_PERSON = "Общие"
 
+var CATEGORY_REPLACES = map[string]string{
+	"автобус":    "транспорт",
+	"трамвай":    "транспорт",
+	"троллейбус": "транспорт",
+	"маршрутка":  "транспорт",
+	"метро":      "транспорт",
+	"электричка": "транспорт",
+	"такси":      "транспорт",
+	"интернет":   "связь",
+}
+
 type ParseError struct {
 	s   string
 	row int
@@ -128,6 +139,10 @@ func parseDesc(s string) (string, string, string, error) {
 		} else {
 			name = strings.TrimSpace(subItems[0])
 		}
+	}
+
+	if v, ok := CATEGORY_REPLACES[category]; ok {
+		category = v
 	}
 
 	return person, category, name, nil

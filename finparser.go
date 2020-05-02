@@ -17,6 +17,8 @@ import (
 	"gopkg.in/kolomiichenko/cbr-currency-go.v1"
 )
 
+const DEFAULT_PERSON = "Общие"
+
 type ParseError struct {
 	s   string
 	row int
@@ -114,6 +116,7 @@ func parseDesc(s string) (string, string, string, error) {
 		person = strings.TrimSpace(subItems[0])
 		category = strings.TrimSpace(subItems[1])
 	} else {
+		person = DEFAULT_PERSON
 		category = strings.TrimSpace(subItems[0])
 	}
 

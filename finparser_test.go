@@ -116,19 +116,19 @@ func TestDesc(t *testing.T) {
 
 	person, category, name, err = parseDesc("Продукты")
 	assert.Nil(t, err)
-	assert.Equal(t, "", person)
+	assert.Equal(t, "Общие", person)
 	assert.Equal(t, "Продукты", category)
 	assert.Equal(t, "Продукты", name)
 
 	person, category, name, err = parseDesc("Продукты - Глобус")
 	assert.Nil(t, err)
-	assert.Equal(t, "", person)
+	assert.Equal(t, "Общие", person)
 	assert.Equal(t, "Продукты", category)
 	assert.Equal(t, "Глобус", name)
 
 	person, category, name, err = parseDesc("Кошка - витамины")
 	assert.Nil(t, err)
-	assert.Equal(t, "", person)
+	assert.Equal(t, "Общие", person)
 	assert.Equal(t, "Кошка", category)
 	assert.Equal(t, "витамины", name)
 
@@ -153,7 +153,7 @@ func TestDesc(t *testing.T) {
 	// invalid input
 	person, category, name, err = parseDesc("пиво -раки")
 	assert.Nil(t, err)
-	assert.Equal(t, "", person)
+	assert.Equal(t, "Общие", person)
 	assert.Equal(t, "пиво -раки", category)
 	assert.Equal(t, "пиво -раки", name)
 }

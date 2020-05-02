@@ -1,4 +1,4 @@
-FROM golang:1.13.4 as builder
+FROM golang:1.14.2 as builder
 WORKDIR /go/src/github.com/dddpaul/finparser
 ADD . ./
 RUN make build-alpine

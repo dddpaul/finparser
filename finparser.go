@@ -141,11 +141,15 @@ func parseDesc(s string) (string, string, string, error) {
 		}
 	}
 
+	person = strings.ToLower(person)
+	category = strings.ToLower(category)
+	name = strings.ToLower(name)
+
 	if v, ok := CATEGORY_REPLACES[category]; ok {
 		category = v
 	}
 
-	return strings.ToLower(person), strings.ToLower(category), strings.ToLower(name), nil
+	return person, category, name, nil
 }
 
 // Parse strings like "123+456+789", "2*400", "$5=338" or "€17" and return sum in roubles

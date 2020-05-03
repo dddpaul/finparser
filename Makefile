@@ -1,7 +1,7 @@
 .PHONY: all build release
 
 IMAGE=dddpaul/finparser
-VERSION=1.2
+VERSION=1.3
 
 all: build
 

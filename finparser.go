@@ -64,11 +64,11 @@ func (p Purchase) toArray() []string {
 type Purchases []*Purchase
 
 func (pp Purchases) toCsv() [][]string {
-	var csv [][]string
+	var c [][]string
 	for _, purchase := range pp {
-		csv = append(csv, purchase.toArray())
+		c = append(c, purchase.toArray())
 	}
-	return csv
+	return c
 }
 
 var l *log.Logger

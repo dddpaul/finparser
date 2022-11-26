@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/soniah/evaler"
-	"gopkg.in/kolomiichenko/cbr-currency-go.v1"
+	"github.com/dddpaul/cbr-currency-go"
 )
 
 const DEFAULT_PERSON = "Общие"

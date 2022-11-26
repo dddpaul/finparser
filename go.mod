@@ -3,9 +3,9 @@ module github.com/dddpaul/finparser
 go 1.18
 
 require (
+	github.com/dddpaul/cbr-currency-go v1.0.3
 	github.com/soniah/evaler v2.2.0+incompatible
 	github.com/stretchr/testify v1.8.1
-	gopkg.in/kolomiichenko/cbr-currency-go.v1 v1.0.2
 )
 
 require (

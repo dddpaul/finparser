@@ -3,7 +3,7 @@ module github.com/dddpaul/finparser
 go 1.18
 
 require (
-	github.com/dddpaul/cbr-currency-go v1.0.3
+	github.com/dddpaul/cbr-currency-go v1.0.5
 	github.com/soniah/evaler v2.2.0+incompatible
 	github.com/stretchr/testify v1.8.1
 )

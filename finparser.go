@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/soniah/evaler"
 	"github.com/dddpaul/cbr-currency-go"
+	"github.com/soniah/evaler"
 )
 
 const DEFAULT_PERSON = "Общие"
@@ -71,18 +71,20 @@ func (pp Purchases) toCsv() [][]string {
 	return c
 }
 
-var l *log.Logger
-var df string
-var re1, re2, re3 *regexp.Regexp
-var currencySymbols = map[string]string{"$": "USD", "€": "EUR"}
+var (
+	l               *log.Logger
+	df              string
+	re1, re2, re3   *regexp.Regexp
+	currencySymbols = map[string]string{"$": "USD", "€": "EUR", "Br": "BYN"}
+)
 
 func init() {
 	var err error
 	re1, err = regexp.Compile("^\\d+$")
 	panicIfNotNil(err)
-	re2, err = regexp.Compile("^[$€]\\d+(\\.\\d+)*=(\\d+)$")
+	re2, err = regexp.Compile("^([$€]|Br)\\d+(\\.\\d+)*=(\\d+)$")
 	panicIfNotNil(err)
-	re3, err = regexp.Compile("^([$€])(\\d+)$")
+	re3, err = regexp.Compile("^([$€]|Br)(\\d+)$")
 	panicIfNotNil(err)
 	cbr.UpdateCurrencyRates()
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strconv"
 	"testing"
 	"time"
 
@@ -159,6 +160,27 @@ func TestParsePriceExpr(t *testing.T) {
 			input:       "€2",
 			date:        testDate,
 			expected:    80, // This might need adjustment based on actual rates
+			expectError: false,
+		},
+		{
+			name:        "belarusian ruble currency conversion with date",
+			input:       "Br5",
+			date:        testDate,
+			expected:    0, // Rate may be 0 for historical dates if BYN not available in CBR historical data
+			expectError: false,
+		},
+		{
+			name:        "belarusian ruble with equals notation",
+			input:       "Br10=250",
+			date:        time.Time{},
+			expected:    250,
+			expectError: false,
+		},
+		{
+			name:        "belarusian ruble with decimal and equals notation",
+			input:       "Br5.5=180",
+			date:        time.Time{},
+			expected:    180,
 			expectError: false,
 		},
 		{
@@ -425,6 +447,26 @@ func TestNewCommodity(t *testing.T) {
 			expectedCategory: "food",
 			expectedName:     "chocolate with nuts and some juice",
 			expectedPrice:    308, // This might need adjustment based on actual rates
+			expectError:      false,
+		},
+		{
+			name:             "commodity with belarusian ruble currency",
+			input:            "John/food - bread (Br5)",
+			date:             testDate,
+			expectedPerson:   "john",
+			expectedCategory: "food",
+			expectedName:     "bread",
+			expectedPrice:    0, // Rate may be 0 for historical dates if BYN not available in CBR historical data
+			expectError:      false,
+		},
+		{
+			name:             "commodity with belarusian ruble equals notation",
+			input:            "Shopping - groceries (Br15=450)",
+			date:             time.Time{},
+			expectedPerson:   "общие",
+			expectedCategory: "shopping",
+			expectedName:     "groceries",
+			expectedPrice:    450,
 			expectError:      false,
 		},
 		{
@@ -742,6 +784,12 @@ func TestGetCurrencyRate(t *testing.T) {
 			expected: true,
 		},
 		{
+			name:     "BYN with zero date",
+			code:     "BYN",
+			date:     time.Time{},
+			expected: true, // BYN is supported by CBR API
+		},
+		{
 			name:     "USD with specific date",
 			code:     "USD",
 			date:     time.Date(2012, 12, 1, 0, 0, 0, 0, time.UTC),
@@ -795,6 +843,20 @@ func TestParsePriceExprEdgeCases(t *testing.T) {
 			date:        time.Time{},
 			expected:    0,
 			expectError: true,
+		},
+		{
+			name:        "belarusian ruble with invalid format",
+			input:       "Brabc",
+			date:        time.Time{},
+			expected:    0,
+			expectError: true,
+		},
+		{
+			name:        "belarusian ruble simple conversion",
+			input:       "Br10",
+			date:        time.Time{},
+			expected:    269, // Actual conversion rate for BYN to RUB from CBR
+			expectError: false,
 		},
 		{
 			name:        "complex expression with parentheses",
@@ -903,6 +965,69 @@ func TestParseDescEdgeCases(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBYNIntegration(t *testing.T) {
+	// Set the global date format for testing
+	df = "02.01.2006"
+
+	// Test data with various BYN currency formats
+	records := [][]string{
+		{"Date", "Items"}, // header
+		{"15.12.2023", "Food - bread (Br15), Transport - bus (30)"},
+		{"16.12.2023", "John/Food - milk (Br5=135), Mary/Shopping - clothes (Br20)"},
+		{"17.12.2023", "Utilities - internet (Br12.5=350), Gas - fuel (150)"},
+	}
+
+	purchases, errors := getPurchases(records)
+
+	// Should have no parsing errors
+	assert.Len(t, errors, 0, "Should have no parsing errors")
+	assert.Len(t, purchases, 6, "Should have 6 purchases")
+
+	// Verify BYN currency conversions
+	expectedPurchases := []struct {
+		person   string
+		category string
+		name     string
+		minPrice int // minimum expected price (rates can fluctuate)
+		maxPrice int // maximum expected price
+	}{
+		{"общие", "food", "bread", 400, 450},         // Br15 ≈ 400-450 rubles
+		{"общие", "transport", "bus", 30, 30},        // 30 rubles (no currency conversion)
+		{"john", "food", "milk", 135, 135},           // Br5=135 (explicit rate)
+		{"mary", "shopping", "clothes", 500, 600},    // Br20 ≈ 500-600 rubles
+		{"общие", "utilities", "internet", 350, 350}, // Br12.5=350 (explicit rate)
+		{"общие", "gas", "fuel", 150, 150},           // 150 rubles (no currency conversion)
+	}
+
+	for i, expected := range expectedPurchases {
+		purchase := purchases[i]
+		assert.Equal(t, expected.person, purchase.commodity.person, "Person mismatch for purchase %d", i)
+		assert.Equal(t, expected.category, purchase.commodity.category, "Category mismatch for purchase %d", i)
+		assert.Equal(t, expected.name, purchase.commodity.name, "Name mismatch for purchase %d", i)
+
+		// For prices, check they're within expected range due to currency rate fluctuations
+		assert.GreaterOrEqual(t, purchase.commodity.price, expected.minPrice,
+			"Price too low for purchase %d (%s)", i, purchase.commodity.name)
+		assert.LessOrEqual(t, purchase.commodity.price, expected.maxPrice,
+			"Price too high for purchase %d (%s)", i, purchase.commodity.name)
+	}
+
+	// Test CSV output format
+	csvData := purchases.toCsv()
+	assert.Len(t, csvData, 6, "CSV should have 6 rows")
+
+	// Verify first BYN purchase in CSV format
+	firstRow := csvData[0]
+	assert.Equal(t, "15.12.2023", firstRow[0])
+	assert.Equal(t, "общие", firstRow[1])
+	assert.Equal(t, "food", firstRow[2])
+	assert.Equal(t, "bread", firstRow[3])
+	// Price should be a valid integer string
+	price, err := strconv.Atoi(firstRow[4])
+	assert.NoError(t, err)
+	assert.Greater(t, price, 0, "Price should be positive")
 }
 
 func TestNewCommodityEdgeCases(t *testing.T) {

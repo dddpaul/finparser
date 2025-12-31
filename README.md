@@ -8,7 +8,7 @@ Convert human-friendly CSV to Qlik Sense loadable CSV format with support for mu
 
 ## Features
 
-- **Multi-currency support**: USD ($), EUR (€), and Belarusian Ruble (Br)
+- **Multi-currency support**: USD ($), EUR (€), Belarusian Ruble (Br), and Armenian Dram (֏)
 - **Automatic currency conversion** to Russian Rubles using CBR (Central Bank of Russia) rates
 - **Flexible price expressions**: Simple numbers, arithmetic operations, currency notations
 - **Category mapping**: Automatic categorization with transport category consolidation
@@ -22,6 +22,7 @@ Convert human-friendly CSV to Qlik Sense loadable CSV format with support for mu
 | US Dollar | $ | USD | `$15`, `$10.50=750` |
 | Euro | € | EUR | `€12`, `€8.25=900` |
 | Belarusian Ruble | Br | BYN | `Br20`, `Br15=400` |
+| Armenian Dram | ֏ | AMD | `֏2000`, `֏1500=300` |
 
 ## Input Format
 
@@ -29,7 +30,7 @@ The input CSV should have the following structure:
 ```csv
 Date,Items
 15.12.2023,"Food - bread (50), Transport - bus (30)"
-16.12.2023,"John/Food - groceries ($25), Mary/Clothes - shirt (€15)"
+16.12.2023,"John/Food - groceries ($25), Mary/Clothes - shirt (€15), Anna/Gifts - flowers (֏2000)"
 ```
 
 ## Purchase Description Format
@@ -42,13 +43,14 @@ Each purchase item follows the pattern: `[Person/]Category[ - Name] (Price)`
 - `Food - bread (50)` → Person: "Общие", Category: "food", Name: "bread", Price: 50
 - `John/Food - groceries (200)` → Person: "john", Category: "food", Name: "groceries", Price: 200
 - `Mary|Clothes - dress ($45)` → Person: "mary", Category: "clothes", Name: "dress", Price: ~1200 RUB
+- `Anna/Gifts - flowers (֏2000)` → Person: "anna", Category: "gifts", Name: "flowers", Price: ~400 RUB
 
 ### Price Expression Formats
 
 1. **Simple numbers**: `(100)`, `(0)`
 2. **Arithmetic expressions**: `(50+25)`, `(2*300)`, `(1000/4)`
-3. **Currency with conversion**: `($15)`, `(€20)`, `(Br10)`
-4. **Currency with explicit rate**: `($10=750)`, `(€15=1300)`, `(Br5=135)`
+3. **Currency with conversion**: `($15)`, `(€20)`, `(Br10)`, `(֏2000)`
+4. **Currency with explicit rate**: `($10=750)`, `(€15=1300)`, `(Br5=135)`, `(֏1500=300)`
 
 ### Category Auto-mapping
 
@@ -86,7 +88,7 @@ Date,Person,Category,Name,Price
 ```csv
 Date,Items
 15.12.2023,"Продукты - хлеб (50), Маша/автобус (30), Одежда ($25)"
-16.12.2023,"Кафе - кофе (€8), Аптека - лекарства (Br15), Бензин (2*500)"
+16.12.2023,"Кафе - кофе (€8), Аптека - лекарства (Br15), Подарки (֏2000), Бензин (2*500)"
 ```
 
 ### Command
@@ -101,6 +103,7 @@ cat example.csv | go run finparser.go
 15.12.2023,общие,одежда,одежда,1350
 16.12.2023,общие,кафе,кофе,870
 16.12.2023,общие,аптека,лекарства,405
+16.12.2023,общие,подарки,подарки,410
 16.12.2023,общие,бензин,бензин,1000
 ```
 
@@ -109,6 +112,7 @@ cat example.csv | go run finparser.go
 - **Current rates**: Uses live CBR exchange rates for transactions without specific dates
 - **Historical rates**: Fetches historical rates for dated transactions
 - **Fallback behavior**: If historical rates are unavailable (e.g., BYN before 2016), conversion returns 0
+- **AMD support**: Armenian Dram has both current and historical rates available in CBR API
 - **Explicit rates**: When using `Currency=Amount` format, uses the specified rate instead of CBR
 
 ## Requirements

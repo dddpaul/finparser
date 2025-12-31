@@ -184,6 +184,27 @@ func TestParsePriceExpr(t *testing.T) {
 			expectError: false,
 		},
 		{
+			name:        "armenian dram currency conversion with date",
+			input:       "֏1000",
+			date:        testDate,
+			expected:    76, // Historical AMD rate for 2012: ~0.076
+			expectError: false,
+		},
+		{
+			name:        "armenian dram with equals notation",
+			input:       "֏500=120",
+			date:        time.Time{},
+			expected:    120,
+			expectError: false,
+		},
+		{
+			name:        "armenian dram with decimal and equals notation",
+			input:       "֏750.5=200",
+			date:        time.Time{},
+			expected:    200,
+			expectError: false,
+		},
+		{
 			name:        "zero value",
 			input:       "0",
 			date:        time.Time{},
@@ -466,6 +487,26 @@ func TestNewCommodity(t *testing.T) {
 			expectedPerson:   "общие",
 			expectedCategory: "shopping",
 			expectedName:     "groceries",
+			expectedPrice:    450,
+			expectError:      false,
+		},
+		{
+			name:             "commodity with armenian dram currency",
+			input:            "Anna/food - bread (֏1000)",
+			date:             testDate,
+			expectedPerson:   "anna",
+			expectedCategory: "food",
+			expectedName:     "bread",
+			expectedPrice:    76, // Historical AMD rate for 2012: ~0.076
+			expectError:      false,
+		},
+		{
+			name:             "commodity with armenian dram equals notation",
+			input:            "Shopping - clothes (֏2000=450)",
+			date:             time.Time{},
+			expectedPerson:   "общие",
+			expectedCategory: "shopping",
+			expectedName:     "clothes",
 			expectedPrice:    450,
 			expectError:      false,
 		},
@@ -790,6 +831,12 @@ func TestGetCurrencyRate(t *testing.T) {
 			expected: true, // BYN is supported by CBR API
 		},
 		{
+			name:     "AMD with zero date",
+			code:     "AMD",
+			date:     time.Time{},
+			expected: true, // AMD is supported by CBR API
+		},
+		{
 			name:     "USD with specific date",
 			code:     "USD",
 			date:     time.Date(2012, 12, 1, 0, 0, 0, 0, time.UTC),
@@ -856,6 +903,20 @@ func TestParsePriceExprEdgeCases(t *testing.T) {
 			input:       "Br10",
 			date:        time.Time{},
 			expected:    269, // Actual conversion rate for BYN to RUB from CBR
+			expectError: false,
+		},
+		{
+			name:        "armenian dram with invalid format",
+			input:       "֏abc",
+			date:        time.Time{},
+			expected:    0,
+			expectError: true,
+		},
+		{
+			name:        "armenian dram simple conversion",
+			input:       "֏1000",
+			date:        time.Time{},
+			expected:    205, // Current AMD rate: ~0.205
 			expectError: false,
 		},
 		{
@@ -974,16 +1035,16 @@ func TestBYNIntegration(t *testing.T) {
 	// Test data with various BYN currency formats
 	records := [][]string{
 		{"Date", "Items"}, // header
-		{"15.12.2023", "Food - bread (Br15), Transport - bus (30)"},
-		{"16.12.2023", "John/Food - milk (Br5=135), Mary/Shopping - clothes (Br20)"},
-		{"17.12.2023", "Utilities - internet (Br12.5=350), Gas - fuel (150)"},
+		{"15.12.2023", "Food - bread (Br15), Transport - bus (30), Clothes - shirt (֏2000)"},
+		{"16.12.2023", "John/Food - milk (Br5=135), Mary/Shopping - clothes (Br20), Anna/Gifts - flowers (֏1500=300)"},
+		{"17.12.2023", "Utilities - internet (Br12.5=350), Gas - fuel (150), Restaurant - dinner (֏3000)"},
 	}
 
 	purchases, errors := getPurchases(records)
 
 	// Should have no parsing errors
 	assert.Len(t, errors, 0, "Should have no parsing errors")
-	assert.Len(t, purchases, 6, "Should have 6 purchases")
+	assert.Len(t, purchases, 9, "Should have 9 purchases")
 
 	// Verify BYN currency conversions
 	expectedPurchases := []struct {
@@ -995,10 +1056,13 @@ func TestBYNIntegration(t *testing.T) {
 	}{
 		{"общие", "food", "bread", 400, 450},         // Br15 ≈ 400-450 rubles
 		{"общие", "transport", "bus", 30, 30},        // 30 rubles (no currency conversion)
+		{"общие", "clothes", "shirt", 400, 450},      // ֏2000 ≈ 400-450 rubles
 		{"john", "food", "milk", 135, 135},           // Br5=135 (explicit rate)
 		{"mary", "shopping", "clothes", 500, 600},    // Br20 ≈ 500-600 rubles
+		{"anna", "gifts", "flowers", 300, 300},       // ֏1500=300 (explicit rate)
 		{"общие", "utilities", "internet", 350, 350}, // Br12.5=350 (explicit rate)
 		{"общие", "gas", "fuel", 150, 150},           // 150 rubles (no currency conversion)
+		{"общие", "restaurant", "dinner", 600, 670},  // ֏3000 ≈ 600-670 rubles
 	}
 
 	for i, expected := range expectedPurchases {
@@ -1016,7 +1080,7 @@ func TestBYNIntegration(t *testing.T) {
 
 	// Test CSV output format
 	csvData := purchases.toCsv()
-	assert.Len(t, csvData, 6, "CSV should have 6 rows")
+	assert.Len(t, csvData, 9, "CSV should have 9 rows")
 
 	// Verify first BYN purchase in CSV format
 	firstRow := csvData[0]

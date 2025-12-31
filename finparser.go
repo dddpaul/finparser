@@ -75,16 +75,16 @@ var (
 	l               *log.Logger
 	df              string
 	re1, re2, re3   *regexp.Regexp
-	currencySymbols = map[string]string{"$": "USD", "€": "EUR", "Br": "BYN"}
+	currencySymbols = map[string]string{"$": "USD", "€": "EUR", "Br": "BYN", "֏": "AMD"}
 )
 
 func init() {
 	var err error
 	re1, err = regexp.Compile("^\\d+$")
 	panicIfNotNil(err)
-	re2, err = regexp.Compile("^([$€]|Br)\\d+(\\.\\d+)*=(\\d+)$")
+	re2, err = regexp.Compile("^([$€]|Br|֏)\\d+(\\.\\d+)*=(\\d+)$")
 	panicIfNotNil(err)
-	re3, err = regexp.Compile("^([$€]|Br)(\\d+)$")
+	re3, err = regexp.Compile("^([$€]|Br|֏)(\\d+)$")
 	panicIfNotNil(err)
 	cbr.UpdateCurrencyRates()
 }

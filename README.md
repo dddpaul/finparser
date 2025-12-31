@@ -232,10 +232,11 @@ echo "Date,Items
 ```
 
 ### Build Architecture Notes
-- Uses debian-based `golang:1.25` image for compilation (more stable than Alpine)
+- Uses `golang:1.25-alpine` image with separated dependency download for reliable compilation
 - Final runtime image uses `alpine:latest` with CA certificates and timezone data
-- Cross-compilation handled automatically by Docker Buildx
-- Images are optimized with `-ldflags="-w -s"` for smaller size
+- Cross-compilation handled automatically by Docker Buildx with proper build arguments
+- Build process optimized for Docker layer caching (go.mod/go.sum copied separately)
+- Compatible with both local Docker builds and CI/CD multiarch builds
 
 ## Dependencies
 

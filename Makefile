@@ -6,7 +6,7 @@ all: build
 
 build-alpine:
 	mkdir -p ./bin
-	CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH:-amd64} go build -ldflags="-w -s" -o ./bin/finparser ./finparser.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH:-amd64} go build -o ./bin/finparser ./finparser.go
 
 build:
 	@docker build --tag=${IMAGE} .

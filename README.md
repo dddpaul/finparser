@@ -111,6 +111,10 @@ cat example.csv | go run finparser.go
 - **Fallback behavior**: If historical rates are unavailable (e.g., BYN before 2016), conversion returns 0
 - **Explicit rates**: When using `Currency=Amount` format, uses the specified rate instead of CBR
 
+## Requirements
+
+- Go 1.25 or later
+
 ## Building
 
 ```bash
@@ -133,8 +137,8 @@ go test -run TestParsePriceExpr ./...
 ## Dependencies
 
 - `github.com/soniah/evaler` - Mathematical expression evaluation
-- `github.com/dddpaul/cbr-currency-go` - CBR currency rate fetching
-- `github.com/stretchr/testify` - Testing framework
+- `github.com/dddpaul/cbr-currency-go` v1.0.7+ - CBR currency rate fetching
+- `github.com/stretchr/testify` v1.11.1+ - Testing framework
 
 ## Error Handling
 

@@ -190,7 +190,11 @@ func getCurrencyRate(code string, d time.Time) float64 {
 	if d.IsZero() {
 		return cbr.GetCurrencyRates()[code].Value
 	} else {
-		return cbr.FetchCurrencyRates(d)[code].Value
+		rates, err := cbr.FetchCurrencyRates(d)
+		if err != nil {
+			return 0
+		}
+		return rates[code].Value
 	}
 }
 

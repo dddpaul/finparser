@@ -121,9 +121,69 @@ cat example.csv | go run finparser.go
 
 ## Building
 
+### Local Build
 ```bash
 go build ./...
 ```
+
+### Docker Build
+
+The project supports building Docker images for multiple architectures using Docker Buildx.
+
+#### Prerequisites
+```bash
+# Ensure Docker Buildx is available (included in Docker Desktop)
+docker buildx version
+
+# One-time setup for multiarch builds
+make setup-buildx
+```
+
+#### Single Architecture Build
+```bash
+# Build for current architecture
+make build
+
+# Build and tag with version
+make release version=1.0.0
+
+# Push to registry
+make push version=1.0.0
+```
+
+#### Multi-Architecture Build
+```bash
+# Build for multiple architectures (linux/amd64, linux/arm64)
+make build-multiarch
+
+# Build and push multiarch images to registry
+make build-multiarch-push
+
+# Build and push with version tag
+make push-multiarch version=1.0.0
+```
+
+#### Direct Docker Commands
+```bash
+# Build multiarch without Make
+docker buildx build --platform linux/amd64,linux/arm64 --tag dddpaul/finparser:latest .
+
+# Build and push multiarch
+docker buildx build --platform linux/amd64,linux/arm64 --tag dddpaul/finparser:latest --push .
+
+# Build specific architecture
+docker buildx build --platform linux/arm64 --tag dddpaul/finparser:arm64 --load .
+```
+
+#### Available Make Targets
+- `make build` - Build single-arch Docker image for current platform
+- `make build-multiarch` - Build multiarch image (amd64, arm64) - cache only
+- `make build-multiarch-push` - Build and push multiarch image to registry
+- `make setup-buildx` - Set up Docker Buildx for multiarch builds (one-time)
+- `make release version=X.Y.Z` - Tag single-arch image with version
+- `make release-multiarch version=X.Y.Z` - Build and push multiarch with version tag
+- `make push version=X.Y.Z` - Push single-arch images with version
+- `make push-multiarch version=X.Y.Z` - Push multiarch images with version
 
 ## Testing
 
@@ -137,6 +197,45 @@ go test -cover ./...
 # Run specific test
 go test -run TestParsePriceExpr ./...
 ```
+
+## Docker Support
+
+The application supports multi-architecture Docker images built with Go 1.25 for:
+- `linux/amd64` (Intel/AMD 64-bit)
+- `linux/arm64` (ARM64/AArch64 - Apple Silicon, AWS Graviton, etc.)
+
+### Docker Hub
+Pre-built multiarch images are available at: `dddpaul/finparser`
+
+```bash
+# Pull and run latest version (automatically selects correct architecture)
+docker pull dddpaul/finparser:latest
+docker run -i dddpaul/finparser:latest < input.csv > output.csv
+
+# Pull specific version
+docker pull dddpaul/finparser:1.0.0
+
+# Run with specific platform (if needed)
+docker run --platform linux/amd64 -i dddpaul/finparser:latest < input.csv > output.csv
+```
+
+### Local Testing with Docker
+```bash
+# Test with sample data
+echo "Date,Items
+01.01.2024,\"Food (100), Transport (\$25), Кафе (€8)\"" | docker run -i dddpaul/finparser:latest
+
+# Expected output:
+# 01.01.2024,общие,food,food,100
+# 01.01.2024,общие,транспорт,транспорт,1350
+# 01.01.2024,общие,кафе,кафе,870
+```
+
+### Build Architecture Notes
+- Uses debian-based `golang:1.25` image for compilation (more stable than Alpine)
+- Final runtime image uses `alpine:latest` with CA certificates and timezone data
+- Cross-compilation handled automatically by Docker Buildx
+- Images are optimized with `-ldflags="-w -s"` for smaller size
 
 ## Dependencies
 

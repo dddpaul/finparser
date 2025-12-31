@@ -14,9 +14,12 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Create Release
         id: release
@@ -32,5 +35,10 @@ jobs:
       - name: Log into registry
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login ${{ secrets.DOCKER_REGISTRY_URL }} -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
-      - name: Build and push image
-        run: make push version=${{ steps.release.outputs.version }}
+      - name: Build and push multiarch image
+        run: |
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --tag dddpaul/finparser:latest \
+            --tag dddpaul/finparser:${{ steps.release.outputs.version }} \
+            --push .

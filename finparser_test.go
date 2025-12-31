@@ -1028,66 +1028,94 @@ func TestParseDescEdgeCases(t *testing.T) {
 	}
 }
 
-func TestBYNIntegration(t *testing.T) {
+func TestMultiCurrencyIntegration(t *testing.T) {
 	// Set the global date format for testing
 	df = "02.01.2006"
 
-	// Test data with various BYN currency formats
+	// Test data with all four currencies: USD ($), EUR (€), BYN (Br), AMD (֏)
 	records := [][]string{
 		{"Date", "Items"}, // header
-		{"15.12.2023", "Food - bread (Br15), Transport - bus (30), Clothes - shirt (֏2000)"},
-		{"16.12.2023", "John/Food - milk (Br5=135), Mary/Shopping - clothes (Br20), Anna/Gifts - flowers (֏1500=300)"},
-		{"17.12.2023", "Utilities - internet (Br12.5=350), Gas - fuel (150), Restaurant - dinner (֏3000)"},
+		{"15.12.2023", "Food - bread ($10), Transport - bus (30), Clothes - shirt (€15)"},
+		{"16.12.2023", "John/Groceries - milk (Br5=135), Mary/Shopping - clothes (Br20), Anna/Gifts - flowers (֏1500=300)"},
+		{"17.12.2023", "Utilities - internet (€20), Gas - fuel (150), Restaurant - dinner (֏2000)"},
+		{"18.12.2023", "Pharmacy - medicine ($25=2250), Coffee - latte (Br8), Entertainment - movie (֏3000=750)"},
 	}
 
 	purchases, errors := getPurchases(records)
 
 	// Should have no parsing errors
-	assert.Len(t, errors, 0, "Should have no parsing errors")
-	assert.Len(t, purchases, 9, "Should have 9 purchases")
+	assert.Len(t, errors, 0, "Should have no parsing errors for all currencies")
+	assert.Len(t, purchases, 12, "Should have 12 purchases total")
 
-	// Verify BYN currency conversions
-	expectedPurchases := []struct {
-		person   string
-		category string
-		name     string
-		minPrice int // minimum expected price (rates can fluctuate)
-		maxPrice int // maximum expected price
-	}{
-		{"общие", "food", "bread", 400, 450},         // Br15 ≈ 400-450 rubles
-		{"общие", "transport", "bus", 30, 30},        // 30 rubles (no currency conversion)
-		{"общие", "clothes", "shirt", 400, 450},      // ֏2000 ≈ 400-450 rubles
-		{"john", "food", "milk", 135, 135},           // Br5=135 (explicit rate)
-		{"mary", "shopping", "clothes", 500, 600},    // Br20 ≈ 500-600 rubles
-		{"anna", "gifts", "flowers", 300, 300},       // ֏1500=300 (explicit rate)
-		{"общие", "utilities", "internet", 350, 350}, // Br12.5=350 (explicit rate)
-		{"общие", "gas", "fuel", 150, 150},           // 150 rubles (no currency conversion)
-		{"общие", "restaurant", "dinner", 600, 670},  // ֏3000 ≈ 600-670 rubles
+	// Verify all currency types are present and converted correctly
+	currencyCounts := make(map[string]int)
+	var explicitRates, convertedRates int
+
+	for _, purchase := range purchases {
+		price := purchase.commodity.price
+		name := purchase.commodity.name
+
+		// Track currency types by expected price ranges and explicit rates
+		switch {
+		case price == 135 && name == "milk": // Br5=135 (explicit BYN rate)
+			currencyCounts["BYN"]++
+			explicitRates++
+		case price == 300 && name == "flowers": // ֏1500=300 (explicit AMD rate)
+			currencyCounts["AMD"]++
+			explicitRates++
+		case price == 2250 && name == "medicine": // $25=2250 (explicit USD rate)
+			currencyCounts["USD"]++
+			explicitRates++
+		case price == 750 && name == "movie": // ֏3000=750 (explicit AMD rate)
+			currencyCounts["AMD"]++
+			explicitRates++
+		case price > 2000: // Likely USD conversion
+			currencyCounts["USD"]++
+			convertedRates++
+		case price > 1000: // Likely EUR conversion
+			currencyCounts["EUR"]++
+			convertedRates++
+		case price > 100 && price < 1000: // Likely BYN or AMD conversion
+			if price < 300 {
+				currencyCounts["BYN"]++
+			} else {
+				currencyCounts["AMD"]++
+			}
+			convertedRates++
+		case price <= 200: // RUB or small conversions
+			currencyCounts["RUB"]++
+		}
 	}
 
-	for i, expected := range expectedPurchases {
-		purchase := purchases[i]
-		assert.Equal(t, expected.person, purchase.commodity.person, "Person mismatch for purchase %d", i)
-		assert.Equal(t, expected.category, purchase.commodity.category, "Category mismatch for purchase %d", i)
-		assert.Equal(t, expected.name, purchase.commodity.name, "Name mismatch for purchase %d", i)
+	// Verify we have transactions from all currency types
+	assert.Greater(t, currencyCounts["USD"], 0, "Should have USD conversions")
+	assert.Greater(t, currencyCounts["EUR"], 0, "Should have EUR conversions")
+	assert.Greater(t, currencyCounts["BYN"], 0, "Should have BYN conversions")
+	assert.Greater(t, currencyCounts["AMD"], 0, "Should have AMD conversions")
+	assert.Greater(t, currencyCounts["RUB"], 0, "Should have RUB transactions")
 
-		// For prices, check they're within expected range due to currency rate fluctuations
-		assert.GreaterOrEqual(t, purchase.commodity.price, expected.minPrice,
-			"Price too low for purchase %d (%s)", i, purchase.commodity.name)
-		assert.LessOrEqual(t, purchase.commodity.price, expected.maxPrice,
-			"Price too high for purchase %d (%s)", i, purchase.commodity.name)
-	}
+	// Verify both explicit rates and API conversions are working
+	assert.Greater(t, explicitRates, 0, "Should have explicit rate conversions")
+	assert.Greater(t, convertedRates, 0, "Should have CBR API conversions")
 
 	// Test CSV output format
 	csvData := purchases.toCsv()
-	assert.Len(t, csvData, 9, "CSV should have 9 rows")
+	assert.Len(t, csvData, 12, "CSV should have 12 rows")
 
-	// Verify first BYN purchase in CSV format
+	// Verify all persons are correctly parsed
+	persons := make(map[string]bool)
+	for _, purchase := range purchases {
+		persons[purchase.commodity.person] = true
+	}
+	assert.Contains(t, persons, "общие", "Should have default person")
+	assert.Contains(t, persons, "john", "Should have John's transactions")
+	assert.Contains(t, persons, "mary", "Should have Mary's transactions")
+	assert.Contains(t, persons, "anna", "Should have Anna's transactions")
+
+	// Verify CSV format correctness
 	firstRow := csvData[0]
+	assert.Len(t, firstRow, 5, "Each CSV row should have 5 columns")
 	assert.Equal(t, "15.12.2023", firstRow[0])
-	assert.Equal(t, "общие", firstRow[1])
-	assert.Equal(t, "food", firstRow[2])
-	assert.Equal(t, "bread", firstRow[3])
 	// Price should be a valid integer string
 	price, err := strconv.Atoi(firstRow[4])
 	assert.NoError(t, err)

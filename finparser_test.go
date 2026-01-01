@@ -367,10 +367,10 @@ func TestParseDesc(t *testing.T) {
 			expectError:      false,
 		},
 		{
-			name:             "category replacement - такси to транспорт",
+			name:             "category no replacement - такси stays такси",
 			input:            "такси",
 			expectedPerson:   "общие",
-			expectedCategory: "транспорт",
+			expectedCategory: "такси",
 			expectedName:     "такси",
 			expectError:      false,
 		},

@@ -55,7 +55,7 @@ Each purchase item follows the pattern: `[Person/]Category[ - Name] (Price)`
 ### Category Auto-mapping
 
 Transport-related categories are automatically consolidated:
-- автобус, трамвай, троллейбус, маршрутка, метро, электричка, такси → транспорт
+- автобус, трамвай, троллейбус, маршрутка, метро, электричка → транспорт
 - интернет → связь
 
 ## Usage
